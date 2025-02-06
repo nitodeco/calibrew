@@ -3,9 +3,8 @@ frontend:
   phases:
     preBuild:
       commands:
-        - npm install -g pnpm@10
-        - export PNPM_HOME="/root/.local/share/pnpm"
-        - export PATH="$PNPM_HOME:$PATH"
+        - corepack enable
+        - corepack prepare pnpm@10.2.0 --activate
         - pnpm install --frozen-lockfile
     build:
       commands:
