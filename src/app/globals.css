@@ -70,3 +70,19 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+[role="slider"] {
+  -webkit-tap-highlight-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[role="slider"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+[role="slider"]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
