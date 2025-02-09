@@ -1,0 +1,84 @@
+{
+  "Header": {
+    "title": "calibrew"
+  },
+  "Footer": {
+    "copyright": "© {year} Nico Möhn. MIT license."
+  },
+  "NotFound": {
+    "title": "Page not found"
+  },
+  "Welcome": {
+    "title": "Welcome to calibrew!",
+    "header": "Calibrew helps you dial in your espresso machine by automatically recommending optimized settings.",
+    "instructions": {
+      "step1": "Get your espresso machine ready",
+      "step2": "Fill up your grinder with coffee",
+      "step3": "Put the portafilter on your scale and tare it"
+    },
+    "continue": "Let's Get Started"
+  },
+  "Roast": {
+    "title": "Roast",
+    "description": "Let's start by setting your coffee's roast level and dosage. You can find the roast level information on the packaging of your coffee beans.",
+    "level": {
+      "title": "Roast Level",
+      "light": "Light",
+      "medium": "Medium",
+      "dark": "Dark"
+    },
+    "dosage": {
+      "title": "Dosage",
+      "grams": "grams"
+    },
+    "continue": "Continue"
+  },
+  "Grinder": {
+    "title": "Grinder",
+    "description": "Now it's time to setup your grind settings. Inspect your grinder and fill out the values below.",
+    "type": {
+      "title": "Grinder Type",
+      "continuous": "Continuous",
+      "stepped": "Stepped",
+      "clicks": "Click-based",
+      "help": "How do you adjust the grind size on your grinder?\n• Continuous - Stepless adjustment, such as a wheel you can spin, but without numbers on it\n• Stepped - Fixed positions, for example numbers from 1 to 40\n• Click-based - Counted by clicks, typical for handheld grinders"
+    },
+    "stepSize": {
+      "title": "Step Size",
+      "help": "The smallest adjustment you can make on your grinder",
+      "placeholder": "e.g. 1"
+    },
+    "unit": {
+      "title": "Unit",
+      "help": "Does your grinder use numbers or letters as its unit of measurement?",
+      "numbers": "Numbers",
+      "letters": "Letters"
+    },
+    "scale": {
+      "reverse": "Reverse scale",
+      "reversed": "Scale is reversed"
+    },
+    "settings": {
+      "finest": {
+        "title": "Finest Setting",
+        "help": "The smallest/finest grind setting on your grinder (usually 1 or A)",
+        "placeholder": {
+          "numbers": "1",
+          "letters": "A"
+        }
+      },
+      "coarsest": {
+        "title": "Coarsest Setting",
+        "help": "The largest/coarsest grind setting on your grinder (e.g. 40 or Z)",
+        "placeholder": {
+          "numbers": "40",
+          "letters": "Z"
+        }
+      }
+    },
+    "clicks": {
+      "description": "We'll provide adjustments in terms of clicks from your current position."
+    },
+    "continue": "Continue"
+  }
+}
