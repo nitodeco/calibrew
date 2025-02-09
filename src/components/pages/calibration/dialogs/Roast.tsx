@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useRoastStore } from "@/hooks/use-store";
 import { Input } from "@/components/ui/input";
+import { useTranslations } from "next-intl";
 
 interface RoastLevelDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ export const RoastLevelDialog: FC<RoastLevelDialogProps> = ({
   open,
   onOpenChange,
 }) => {
+  const t = useTranslations();
   const {
     roastLevel,
     dosageGrams,
@@ -38,17 +40,15 @@ export const RoastLevelDialog: FC<RoastLevelDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Roast</DialogTitle>
-          <DialogDescription>
-            Let's start by setting your coffee's roast level and dosage. You can
-            find the roast level information on the packaging of your coffee
-            beans.
-          </DialogDescription>
+          <DialogTitle>{t("Dialogs.Roast.title")}</DialogTitle>
+          <DialogDescription>{t("Dialogs.Roast.description")}</DialogDescription>
         </DialogHeader>
         <div className="py-6">
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Roast Level</label>
+              <label className="text-sm font-medium">
+                {t("Dialogs.Roast.level.title")}
+              </label>
               <div className="space-y-4">
                 <Slider
                   value={[roastLevel]}
@@ -58,29 +58,24 @@ export const RoastLevelDialog: FC<RoastLevelDialogProps> = ({
                   className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
                 />
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Light</span>
-                  <span>Medium</span>
-                  <span>Dark</span>
+                  <span>{t("Dialogs.Roast.level.light")}</span>
+                  <span>{t("Dialogs.Roast.level.medium")}</span>
+                  <span>{t("Dialogs.Roast.level.dark")}</span>
                 </div>
-              </div>
-              <div className="text-center text-sm text-muted-foreground">
-                {roastLevel <= 33 && "Bright, acidic, with subtle flavors"}
-                {roastLevel > 33 &&
-                  roastLevel <= 66 &&
-                  "Balanced, with caramel notes"}
-                {roastLevel > 66 && "Bold, rich, with chocolate notes"}
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Dose (grams)</label>
+              <label className="text-sm font-medium">
+                {t("Dialogs.Roast.dosage.title")}
+              </label>
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <Slider
                     value={[dosageGrams]}
                     onValueChange={(value) => setDosageGrams(value[0])}
-                    min={14}
-                    max={24}
+                    min={4}
+                    max={36}
                     step={1}
                     className="flex-1 [&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
                   />
@@ -89,25 +84,17 @@ export const RoastLevelDialog: FC<RoastLevelDialogProps> = ({
                     value={dosageGrams}
                     onChange={(e) => setDosageGrams(Number(e.target.value))}
                     className="w-20"
-                    min={14}
-                    max={24}
+                    min={4}
+                    max={36}
                     step={0.1}
                   />
-                </div>
-                <div className="text-center text-sm text-muted-foreground">
-                  {dosageGrams < 16 && "Light dose - suited for lighter roasts"}
-                  {dosageGrams >= 16 &&
-                    dosageGrams <= 19 &&
-                    "Standard dose - balanced extraction"}
-                  {dosageGrams > 19 &&
-                    "Heavy dose - intense flavor, slower extraction"}
                 </div>
               </div>
             </div>
           </div>
         </div>
         <div className="flex justify-end">
-          <Button onClick={handleContinue}>Continue</Button>
+          <Button onClick={handleContinue}>{t("Dialogs.Roast.continue")}</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -1,4 +1,5 @@
 import { FC, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,8 @@ import {
 } from "@/types/grind";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Help } from "@/components/ui/help";
+import { ArrowUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface GrinderDialogProps {
   open: boolean;
@@ -35,13 +38,15 @@ export const GrinderDialog: FC<GrinderDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { hasSetGrinder, setGrindSetting, setHasSetGrinder } =
+  const t = useTranslations();
+  const { hasSetGrinder, setGrindSetting, setHasSetGrinder, setReverseScale } =
     useGrinderStore();
   const [selectedType, setSelectedType] = useState<GrindType>("stepped");
   const [unit, setUnit] = useState<GrindUnit>("numbers");
   const [minValue, setMinValue] = useState<string>("1");
   const [maxValue, setMaxValue] = useState<string>("40");
   const [stepSize, setStepSize] = useState<string>("1");
+  const [isReversed, setIsReversed] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleUnitChange = (value: GrindUnit) => {
@@ -75,6 +80,7 @@ export const GrinderDialog: FC<GrinderDialogProps> = ({
           maxValue:
             unit === "numbers" ? parseInt(maxValue) : maxValue.toUpperCase(),
         });
+        setReverseScale(isReversed);
       } else {
         setting = GrindSettingSchema.parse({
           type: "clicks",
@@ -112,10 +118,9 @@ export const GrinderDialog: FC<GrinderDialogProps> = ({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Grinder</DialogTitle>
+            <DialogTitle>{t("Dialogs.Grinder.title")}</DialogTitle>
             <DialogDescription>
-              Now it's time to setup your grind settings. Inspect your grinder
-              and fill out the values below.
+              {t("Dialogs.Grinder.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-6">
@@ -126,16 +131,8 @@ export const GrinderDialog: FC<GrinderDialogProps> = ({
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label>Grinder Type</Label>
-                  <Help>
-                    How do you adjust the grind size on your grinder?
-                    <br />• Continuous - Stepless adjustment, such as a wheel
-                    you can spin, but without numbers on it
-                    <br />• Stepped - Fixed positions, for example numbers from
-                    1 to 40
-                    <br />• Click-based - Counted by clicks, typical for
-                    handheld grinders
-                  </Help>
+                  <Label>{t("Dialogs.Grinder.type.title")}</Label>
+                  <Help>{t("Dialogs.Grinder.type.help")}</Help>
                 </div>
                 <div className="relative" onClick={(e) => e.stopPropagation()}>
                   <Select
@@ -155,9 +152,15 @@ export const GrinderDialog: FC<GrinderDialogProps> = ({
                         e.stopPropagation();
                       }}
                     >
-                      <SelectItem value="absolute">Continuous</SelectItem>
-                      <SelectItem value="stepped">Stepped</SelectItem>
-                      <SelectItem value="clicks">Click-based</SelectItem>
+                      <SelectItem value="absolute">
+                        {t("Dialogs.Grinder.type.continuous")}
+                      </SelectItem>
+                      <SelectItem value="stepped">
+                        {t("Dialogs.Grinder.type.stepped")}
+                      </SelectItem>
+                      <SelectItem value="clicks">
+                        {t("Dialogs.Grinder.type.clicks")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -166,10 +169,8 @@ export const GrinderDialog: FC<GrinderDialogProps> = ({
               {selectedType === "absolute" && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Label>Step Size</Label>
-                    <Help>
-                      The smallest adjustment you can make on your grinder
-                    </Help>
+                    <Label>{t("Dialogs.Grinder.stepSize.title")}</Label>
+                    <Help>{t("Dialogs.Grinder.stepSize.help")}</Help>
                   </div>
                   <Input
                     type="number"
@@ -178,7 +179,7 @@ export const GrinderDialog: FC<GrinderDialogProps> = ({
                       setStepSize(e.target.value);
                       setErrors({});
                     }}
-                    placeholder="e.g. 1"
+                    placeholder={t("Dialogs.Grinder.stepSize.placeholder")}
                     min="0.1"
                     step="0.1"
                   />
@@ -194,102 +195,111 @@ export const GrinderDialog: FC<GrinderDialogProps> = ({
                 <>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Label>Unit</Label>
-                      <Help>
-                        Does your grinder use numbers or letters as its unit of
-                        measurement?
-                      </Help>
+                      <Label>{t("Dialogs.Grinder.unit.title")}</Label>
+                      <Help>{t("Dialogs.Grinder.unit.help")}</Help>
                     </div>
-                    <div
-                      className="relative"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Select
-                        defaultValue={unit}
-                        onValueChange={handleUnitChange}
+                    <div className="flex gap-2">
+                      <div
+                        className="relative flex-1"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <SelectTrigger onClick={(e) => e.stopPropagation()}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent
-                          side="bottom"
-                          onCloseAutoFocus={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
+                        <Select
+                          defaultValue={unit}
+                          onValueChange={handleUnitChange}
                         >
-                          <SelectItem value="numbers">Numbers</SelectItem>
-                          <SelectItem value="letters">Letters</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          <SelectTrigger onClick={(e) => e.stopPropagation()}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent
+                            side="bottom"
+                            onCloseAutoFocus={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                          >
+                            <SelectItem value="numbers">
+                              {t("Dialogs.Grinder.unit.numbers")}
+                            </SelectItem>
+                            <SelectItem value="letters">
+                              {t("Dialogs.Grinder.unit.letters")}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {unit === "numbers" && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          type="button"
+                          onClick={() => setIsReversed(!isReversed)}
+                          className={cn("shrink-0", isReversed && "bg-muted")}
+                          title={
+                            isReversed
+                              ? t("Dialogs.Grinder.scale.reversed")
+                              : t("Dialogs.Grinder.scale.reverse")
+                          }
+                        >
+                          <ArrowUpDown className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label>Finest Setting</Label>
-                        <Help>
-                          The smallest/finest grind setting on your grinder
-                          (usually 1 or A)
-                        </Help>
+                    {[
+                      isReversed ? "coarsest" : "finest",
+                      isReversed ? "finest" : "coarsest",
+                    ].map((type, index) => (
+                      <div key={type} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label>
+                            {t(`Dialogs.Grinder.settings.${type}.title`)}
+                          </Label>
+                          <Help>
+                            {t(`Dialogs.Grinder.settings.${type}.help`)}
+                          </Help>
+                        </div>
+                        <Input
+                          value={type === "finest" ? minValue : maxValue}
+                          onChange={(e) => {
+                            type === "finest"
+                              ? setMinValue(e.target.value)
+                              : setMaxValue(e.target.value);
+                            setErrors({});
+                          }}
+                          placeholder={t(
+                            `Dialogs.Grinder.settings.${type}.placeholder.${unit}`
+                          )}
+                          type={unit === "numbers" ? "number" : "text"}
+                          min={unit === "numbers" ? "0" : undefined}
+                          maxLength={unit === "letters" ? 1 : undefined}
+                        />
+                        {(type === "finest"
+                          ? errors.minValue
+                          : errors.maxValue) && (
+                          <p className="text-sm text-destructive">
+                            {type === "finest"
+                              ? errors.minValue
+                              : errors.maxValue}
+                          </p>
+                        )}
                       </div>
-                      <Input
-                        value={minValue}
-                        onChange={(e) => {
-                          setMinValue(e.target.value);
-                          setErrors({});
-                        }}
-                        placeholder={unit === "numbers" ? "1" : "A"}
-                        type={unit === "numbers" ? "number" : "text"}
-                        min={unit === "numbers" ? "0" : undefined}
-                        maxLength={unit === "letters" ? 1 : undefined}
-                      />
-                      {errors.minValue && (
-                        <p className="text-sm text-destructive">
-                          {errors.minValue}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label>Coarsest Setting</Label>
-                        <Help>
-                          The largest/coarsest grind setting on your grinder
-                          (e.g. 40 or Z)
-                        </Help>
-                      </div>
-                      <Input
-                        value={maxValue}
-                        onChange={(e) => {
-                          setMaxValue(e.target.value);
-                          setErrors({});
-                        }}
-                        placeholder={unit === "numbers" ? "40" : "Z"}
-                        type={unit === "numbers" ? "number" : "text"}
-                        min={unit === "numbers" ? "1" : undefined}
-                        maxLength={unit === "letters" ? 1 : undefined}
-                      />
-                      {errors.maxValue && (
-                        <p className="text-sm text-destructive">
-                          {errors.maxValue}
-                        </p>
-                      )}
-                    </div>
+                    ))}
                   </div>
                 </>
               )}
 
               {selectedType === "clicks" && (
                 <p className="text-sm text-muted-foreground">
-                  We'll provide adjustments in terms of clicks from your current
-                  position.
+                  {t("Dialogs.Grinder.clicks.description")}
                 </p>
               )}
             </div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={validateAndSetGrindSetting}>Continue</Button>
+            <Button onClick={validateAndSetGrindSetting}>
+              {t("Dialogs.Grinder.continue")}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
