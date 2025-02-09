@@ -5,110 +5,187 @@ import {
   type CalibrationFormData,
   type CalibrationResult,
 } from "@/lib/schemas/calibration";
+import { GrindSetting } from "@/types/grind";
+
+interface AdjustmentRange {
+  min: number;
+  max: number;
+  defaultStep: number;
+}
+
+const getAdjustmentRange = (grindSetting: GrindSetting): AdjustmentRange => {
+  switch (grindSetting.type) {
+    case "absolute":
+      // For absolute numbers, use conservative steps based on step size
+      return {
+        min: grindSetting.stepSize,
+        max: grindSetting.stepSize * 3, // Max 3 steps
+        defaultStep: grindSetting.stepSize,
+      };
+    case "stepped":
+      if (grindSetting.unit === "numbers") {
+        const range =
+          (grindSetting.maxValue as number) - (grindSetting.minValue as number);
+        // For numbered steps, use at most 20% of the total range
+        return {
+          min: 1,
+          max: Math.max(1, Math.floor(range * 0.2)),
+          defaultStep: 1,
+        };
+      } else {
+        // For lettered steps (like A-Z), use single step adjustments
+        return {
+          min: 1,
+          max: 1,
+          defaultStep: 1,
+        };
+      }
+    case "clicks":
+      // For click-based grinders, allow for more granular adjustments
+      return {
+        min: 1,
+        max: 4, // Most click grinders can handle 4 clicks adjustment
+        defaultStep: 1,
+      };
+  }
+};
+
+const calculateGrindAdjustment = (
+  tasteBalance: number,
+  yieldRatio: number,
+  grindSetting: GrindSetting
+): { direction: "finer" | "coarser"; steps: number } => {
+  const range = getAdjustmentRange(grindSetting);
+
+  // Initialize base direction from taste (primary factor)
+  const needsFiner = tasteBalance < 50;
+  let adjustmentMagnitude = 0;
+
+  // Calculate taste-based adjustment magnitude (0-1 scale)
+  const tasteDeviation = Math.abs(tasteBalance - 50) / 50; // Normalized to 0-1
+  adjustmentMagnitude += tasteDeviation;
+
+  // Calculate yield-based adjustment magnitude (0-1 scale)
+  const targetRatio = 2;
+  const yieldDeviation = Math.abs(yieldRatio - targetRatio) / targetRatio;
+  adjustmentMagnitude += yieldDeviation * 0.5; // Yield has 50% weight of taste
+
+  // Scale the adjustment magnitude to actual steps
+  const rawSteps = adjustmentMagnitude * range.max;
+  const steps = Math.max(
+    range.min,
+    Math.min(
+      range.max,
+      Math.round(rawSteps / range.defaultStep) * range.defaultStep
+    )
+  );
+
+  return {
+    direction: needsFiner ? "finer" : "coarser",
+    steps,
+  };
+};
+
+const formatGrindAdjustment = (
+  direction: "finer" | "coarser",
+  steps: number,
+  grindSetting: GrindSetting
+): string => {
+  switch (grindSetting.type) {
+    case "absolute":
+      return `Adjust grinder ${direction} by ${steps} ${
+        steps === 1 ? "point" : "points"
+      }`;
+    case "stepped":
+      if (grindSetting.unit === "numbers") {
+        return `Move ${direction === "finer" ? "down" : "up"} ${steps} number${
+          steps === 1 ? "" : "s"
+        }`;
+      } else {
+        return `Move ${direction === "finer" ? "down" : "up"} ${steps} letter${
+          steps === 1 ? "" : "s"
+        }`;
+      }
+    case "clicks":
+      return `Turn ${direction === "finer" ? "right" : "left"} ${steps} click${
+        steps === 1 ? "" : "s"
+      }`;
+  }
+};
 
 export async function calculateCalibration(
-  params: CalibrationFormData
+  data: CalibrationFormData,
+  grindSetting: GrindSetting
 ): Promise<CalibrationResult> {
-  // Validate input data
-  const validatedData = calibrationSchema.parse(params);
-  const {
-    roastLevel,
-    grindSize,
-    dose,
-    brewTime,
-    yield: coffeeYield,
+  const { tasteBalance, dose, yield: actualYield } = data;
+  const yieldRatio = actualYield / dose;
+
+  // Calculate grind adjustment based on taste and yield
+  const { direction, steps } = calculateGrindAdjustment(
     tasteBalance,
-  } = validatedData;
+    yieldRatio,
+    grindSetting
+  );
 
-  // Calculate extraction ratio
-  const ratio = coffeeYield / dose;
+  // Generate the grind adjustment recommendation
+  const grindAdjustment = formatGrindAdjustment(direction, steps, grindSetting);
 
-  // Base adjustments on taste balance and current parameters
-  let adjustments: CalibrationResult = {
-    grindAdjustment: "",
-    doseAdjustment: "",
-    yieldAdjustment: "",
-    brewTimeTarget: "",
-    explanation: "",
+  // Generate explanation based on both taste and yield
+  let explanation = "";
+
+  // Add taste-based explanation
+  if (Math.abs(tasteBalance - 50) > 10) {
+    explanation = `Your shot is too ${
+      direction === "finer" ? "sour" : "bitter"
+    }. ${grindAdjustment} to achieve better extraction.`;
+  }
+
+  // Add yield-based explanation
+  if (Math.abs(yieldRatio - 2) > 0.2) {
+    const yieldExplanation = ` Your yield ratio of ${yieldRatio.toFixed(
+      1
+    )}x is ${
+      yieldRatio > 2 ? "higher" : "lower"
+    } than the target of 2x your dose.`;
+
+    explanation = explanation
+      ? `${explanation}${yieldExplanation}`
+      : yieldExplanation;
+  }
+
+  if (!explanation) {
+    explanation =
+      "Your shot is well balanced. Keep these parameters for consistent results.";
+  }
+
+  return {
+    grindAdjustment,
+    doseAdjustment: "Keep your dose consistent",
+    yieldAdjustment: "Target a 1:2 ratio (yield should be 2x your dose)",
+    brewTimeTarget: "Observe and note the brew time with the new grind setting",
+    explanation,
   };
+}
 
-  // Helper function to analyze brew time
-  const getBrewTimeAssessment = (time: number) => {
-    if (time < 25) return "too fast";
-    if (time > 32) return "too slow";
-    return "good";
-  };
+function getNormalizedGrindSetting(
+  previousGrind: number,
+  tasteDelta: number,
+  dose: number,
+  yieldGrams: number,
+  brewTime: number,
+  k: number = 30 // adjust k based on experience
+): number {
+  const adjustment = k * tasteDelta * (yieldGrams / (dose * brewTime));
+  let nextGrind = previousGrind + adjustment;
 
-  // Analyze current parameters
-  const brewSpeed = getBrewTimeAssessment(brewTime);
-  const isGrindTooCoarse = grindSize > 30;
-  const isGrindTooFine = grindSize < 10;
+  nextGrind = Math.max(0, Math.min(1, nextGrind));
+  return nextGrind;
+}
 
-  // Taste is too sour (under-extracted) - balance < 40
-  if (tasteBalance < 40) {
-    const brewTimeMsg =
-      brewSpeed === "too fast" ? "Your shot is running too fast. " : "";
-
-    adjustments = {
-      grindAdjustment: `Grind finer by ${
-        isGrindTooFine ? "1-2" : "2-3"
-      } settings`,
-      doseAdjustment: "Reduce dose by 0.5g",
-      yieldAdjustment: "Increase yield by 2g",
-      brewTimeTarget: "Aim for 28-32 seconds",
-      explanation: `${brewTimeMsg}Your coffee is under-extracted. We recommend grinding finer and slightly reducing the dose to improve extraction.`,
-    };
-  }
-  // Taste is too bitter (over-extracted) - balance > 60
-  else if (tasteBalance > 60) {
-    const brewTimeMsg =
-      brewSpeed === "too slow" ? "Your shot is running too slow. " : "";
-
-    adjustments = {
-      grindAdjustment: `Grind coarser by ${
-        isGrindTooCoarse ? "1-2" : "2-3"
-      } settings`,
-      doseAdjustment: "Increase dose by 0.5g",
-      yieldAdjustment: "Reduce yield by 2g",
-      brewTimeTarget: "Aim for 25-28 seconds",
-      explanation: `${brewTimeMsg}Your coffee is over-extracted. We recommend grinding coarser and slightly increasing the dose to reduce extraction.`,
-    };
-  }
-  // Balanced but might need fine-tuning
-  else {
-    let finetuneMsg = "";
-    if (brewSpeed !== "good") {
-      finetuneMsg =
-        brewSpeed === "too fast"
-          ? " Consider a slightly finer grind to slow down the shot."
-          : " Consider a slightly coarser grind to speed up the shot.";
-    }
-
-    adjustments = {
-      grindAdjustment:
-        brewSpeed === "good"
-          ? "Current grind size is good"
-          : `Try ${
-              brewSpeed === "too fast" ? "finer" : "coarser"
-            } by 1 setting`,
-      doseAdjustment: "Current dose is good",
-      yieldAdjustment: `Maintain current ratio of 1:${ratio.toFixed(1)}`,
-      brewTimeTarget:
-        brewSpeed === "good"
-          ? "Current brew time is good"
-          : `Aim for 25-32 seconds (currently ${brewTime}s)`,
-      explanation: `Your parameters are well balanced!${finetuneMsg} Make minor adjustments based on taste preferences.`,
-    };
-  }
-
-  // Roast-specific adjustments
-  if (roastLevel === "light") {
-    adjustments.explanation +=
-      " Light roasts typically benefit from higher temperatures and longer ratios.";
-  } else if (roastLevel === "dark") {
-    adjustments.explanation +=
-      " Dark roasts typically benefit from lower temperatures and shorter ratios.";
-  }
-
-  return adjustments;
+function denormalizeGrindSetting(
+  min: number,
+  max: number,
+  normalized: number
+): number {
+  return min + (max - min) * normalized;
 }

@@ -3,7 +3,7 @@
 import { FC } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { CalibrationPage } from "@/components/pages/calibration-page";
+import { CalibrationPage } from "@/components/pages/calibration";
 
 const Home: FC = () => {
   return (
